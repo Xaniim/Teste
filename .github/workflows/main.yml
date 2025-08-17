@@ -41,7 +41,16 @@ jobs:
           unzip Godot_v${GODOT_VERSION}_export_templates.tpz -d /tmp/templates
           mkdir -p "$TEMPLATES_DIR"
           mv /tmp/templates/templates/* "$TEMPLATES_DIR/"
-          ls -la "$TEMPLATES_DIR"
+
+      # FIX: Add Android build template installation
+      - name: Install Android Build Template
+        run: |
+          GODOT_VERSION="4.5-beta5"
+          wget https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot-v${GODOT_VERSION}-android_build_template.zip
+          mkdir -p android/build
+          unzip Godot-v${GODOT_VERSION}-android_build_template.zip -d android/build_temp
+          mv android/build_temp/android_template/* android/build/
+          rm -r android/build_temp
 
       - name: Android SDK & NDK setup
         run: |
