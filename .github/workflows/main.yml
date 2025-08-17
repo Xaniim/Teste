@@ -20,20 +20,20 @@ jobs:
           sudo apt update
           sudo apt install -y wget unzip openjdk-11-jdk zip
 
-      # --- Download Godot ---
-      - name: Download Godot
+      # --- Download Godot Linux ---
+      - name: Download Godot Linux x86_64
         run: |
           mkdir godot
-          wget https://github.com/godotengine/godot-builds/releases/download/4.5-beta5/Godot_v4.5-beta5-stable_linux_x11.64.zip
-          unzip Godot_v4.5-beta5-stable_linux_x11.64.zip -d godot
-          chmod +x godot/Godot_v4.5-beta5-stable_linux_x11.64
+          wget https://github.com/godotengine/godot-builds/releases/download/4.5-beta5/Godot_v4.5-beta5_linux.x86_64.zip
+          unzip Godot_v4.5-beta5_linux.x86_64.zip -d godot
+          chmod +x godot/Godot_v4.5-beta5_linux.x86_64
 
       # --- Download Export Templates ---
       - name: Download Export Templates
         run: |
           mkdir -p ~/.local/share/godot/templates/4.5.beta5
-          wget https://github.com/godotengine/godot-builds/releases/download/4.5-beta5/Godot_v4.5-beta5-stable_export_templates.tpz
-          unzip Godot_v4.5-beta5-stable_export_templates.tpz -d ~/.local/share/godot/templates/4.5.beta5
+          wget https://github.com/godotengine/godot-builds/releases/download/4.5-beta5/Godot_v4.5-beta5_export_templates.tpz
+          unzip Godot_v4.5-beta5_export_templates.tpz -d ~/.local/share/godot/templates/4.5.beta5
 
       # --- Android SDK Setup ---
       - name: Android SDK Setup
@@ -61,7 +61,7 @@ jobs:
       # --- Build Android APK Debug ---
       - name: Build Android APK Debug
         run: |
-          ./godot/Godot_v4.5-beta5-stable_linux_x11.64 \
+          ./godot/Godot_v4.5-beta5_linux.x86_64 \
             --export-debug "Android" build/app-debug.apk --verbose
 
       # --- Build Android APK Release ---
@@ -71,7 +71,7 @@ jobs:
           KEY_ALIAS: androiddebugkey
           KEY_PASSWORD: android
         run: |
-          ./godot/Godot_v4.5-beta5-stable_linux_x11.64 \
+          ./godot/Godot_v4.5-beta5_linux.x86_64 \
             --export "Android" build/app-release.apk --verbose
 
       # --- Build Android AAB ---
@@ -81,7 +81,7 @@ jobs:
           KEY_ALIAS: androiddebugkey
           KEY_PASSWORD: android
         run: |
-          ./godot/Godot_v4.5-beta5-stable_linux_x11.64 \
+          ./godot/Godot_v4.5-beta5_linux.x86_64 \
             --export "Android App Bundle" build/app-release.aab --verbose
 
       # --- Upload Artifacts ---
