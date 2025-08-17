@@ -1,4 +1,4 @@
-name: Godot 4.5 Beta 5 Multi Build
+name: Godot 4.5 Beta 5 Android Build
 
 on:
   push:
@@ -6,13 +6,13 @@ on:
   pull_request:
 
 jobs:
-  build-linux-android:
+  android:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: |
           sudo apt update
           sudo apt install -y wget unzip openjdk-11-jdk zip
@@ -24,29 +24,32 @@ jobs:
           unzip -q Godot_v4.5-beta5_linux.x86_64.zip -d godot
           chmod +x godot/Godot_v4.5-beta5_linux.x86_64
 
-      - name: Download Export Templates
+      - name: Download Godot export templates
         run: |
           mkdir -p ~/.local/share/godot/templates/4.5.beta5
           wget -q https://github.com/godotengine/godot-builds/releases/download/4.5-beta5/Godot_v4.5-beta5_export_templates.tpz
           unzip -q Godot_v4.5-beta5_export_templates.tpz -d ~/.local/share/godot/templates/4.5.beta5
 
-      - name: Android SDK Setup
-        shell: bash
+      - name: Android SDK & NDK Setup
         run: |
           mkdir -p $HOME/android-sdk/cmdline-tools
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
           unzip -q commandlinetools-linux-9477386_latest.zip -d $HOME/android-sdk/cmdline-tools
-
-          # Corrige caminho para sdkmanager
           mv $HOME/android-sdk/cmdline-tools/cmdline-tools $HOME/android-sdk/cmdline-tools/latest
 
           export ANDROID_SDK_ROOT=$HOME/android-sdk
           export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/build-tools/33.0.2:$PATH
 
-          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses
-          $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platforms;android-33" "build-tools;33.0.2" "ndk;25.2.9519653"
+          # Aceitar licenças sem quebrar o pipe
+          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      - name: Generate Debug Keystore
+          # Instalar plataforma, build-tools e NDK
+          $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager \
+            "platforms;android-33" \
+            "build-tools;33.0.2" \
+            "ndk;25.2.9519653"
+
+      - name: Generate debug keystore
         run: |
           keytool -genkeypair -v \
             -keystore debug.keystore \
@@ -80,8 +83,8 @@ jobs:
           ./godot/Godot_v4.5-beta5_linux.x86_64 \
             --export "Android App Bundle" build/app-release.aab --verbose
 
-      - name: Upload Artifacts
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: godot-build
+          name: godot-android-build
           path: build/
