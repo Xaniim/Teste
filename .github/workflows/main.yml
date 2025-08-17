@@ -30,7 +30,7 @@ jobs:
           wget -q https://github.com/godotengine/godot-builds/releases/download/4.5-beta5/Godot_v4.5-beta5_export_templates.tpz
           unzip -q Godot_v4.5-beta5_export_templates.tpz -d ~/.local/share/godot/templates/4.5.beta5
 
-      - name: Android SDK & NDK Setup
+      - name: Setup Android SDK & NDK
         run: |
           mkdir -p $HOME/android-sdk/cmdline-tools
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
@@ -61,40 +61,62 @@ jobs:
 
       - name: Create export_presets.cfg
         run: |
-          mkdir -p export_presets
-          cat <<EOL > export_presets/export_presets.cfg
-          [preset.1]
-          name="Android"
-          platform="Android"
-          file="build/app-release.apk"
-          keystore="debug.keystore"
-          store_password="android"
-          alias="androiddebugkey"
-          alias_password="android"
-          EOL
+          cat > export_presets.cfg << 'EOF'
+[preset.0]
+name="Android Debug APK"
+platform="Android"
+runnable=true
+export_path="build/debug.apk"
+script_export_mode=2
 
-      - name: Build Android APK Debug
-        run: |
-          ./godot/Godot_v4.5-beta5_linux.x86_64 --headless \
-            --export-debug "Android" build/app-debug.apk --verbose
+[preset.0.options]
+package/unique_name="com.lewriner.game"
+package/signed=false
+architectures/arm64-v8a=true
+version/code=1
+version/name="0.1"
+permissions/custom_permissions=PackedStringArray()
+gradle_build/export_format=0
 
-      - name: Build Android APK Release
-        env:
-          KEYSTORE_PASSWORD: android
-          KEY_ALIAS: androiddebugkey
-          KEY_PASSWORD: android
-        run: |
-          ./godot/Godot_v4.5-beta5_linux.x86_64 --headless \
-            --export "Android" build/app-release.apk --verbose
+[preset.1]
+name="Android Release APK"
+platform="Android"
+runnable=true
+export_path="build/release.apk"
+script_export_mode=2
 
-      - name: Build Android AAB
-        env:
-          KEYSTORE_PASSWORD: android
-          KEY_ALIAS: androiddebugkey
-          KEY_PASSWORD: android
+[preset.1.options]
+package/unique_name="com.lewriner.game"
+package/signed=true
+architectures/arm64-v8a=true
+version/code=1
+version/name="0.1"
+permissions/custom_permissions=PackedStringArray()
+gradle_build/export_format=0
+
+[preset.2]
+name="Android Release AAB"
+platform="Android"
+runnable=true
+export_path="build/release.aab"
+script_export_mode=2
+
+[preset.2.options]
+package/unique_name="com.lewriner.game"
+package/signed=true
+architectures/arm64-v8a=true
+version/code=1
+version/name="0.1"
+permissions/custom_permissions=PackedStringArray()
+gradle_build/export_format=1
+EOF
+
+      - name: Build all Android targets
         run: |
-          ./godot/Godot_v4.5-beta5_linux.x86_64 --headless \
-            --export "Android App Bundle" build/app-release.aab --verbose
+          mkdir -p build
+          ./godot/Godot_v4.5-beta5_linux.x86_64 --headless --export "Android Debug APK" build/debug.apk --verbose
+          ./godot/Godot_v4.5-beta5_linux.x86_64 --headless --export "Android Release APK" build/release.apk --verbose
+          ./godot/Godot_v4.5-beta5_linux.x86_64 --headless --export "Android Release AAB" build/release.aab --verbose
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
