@@ -1,114 +1,103 @@
-name: Build Godot Android
+name: Godot 4.5 Beta 5 Android Build
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
 
 jobs:
-  build-android:
+  android:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y unzip openjdk-17-jdk keytool wget
+          sudo apt update
+          sudo apt install -y wget unzip openjdk-11-jdk zip tar
 
-      - name: Download Godot Headless + Export Templates
+      - name: Download Godot Linux x86_64
         run: |
-          mkdir -p godot
-          wget https://downloads.tuxfamily.org/godotengine/4.5/beta5/Godot_v4.5-beta5_linux.x86_64.zip -O godot/godot.zip
-          unzip godot/godot.zip -d godot/
-          mv godot/Godot_v4.5-beta5_linux.x86_64 godot/godot
-          chmod +x godot/godot
-          
-          wget https://downloads.tuxfamily.org/godotengine/4.5/beta5/Godot_v4.5-beta5_export_templates.tpz -O godot/templates.tpz
-          mkdir -p ~/.local/share/godot/export_templates/4.5.beta5
-          unzip godot/templates.tpz -d ~/.local/share/godot/export_templates/4.5.beta5
+          mkdir godot
+          wget -q https://github.com/godotengine/godot-builds/releases/download/4.5-beta5/Godot_v4.5-beta5_linux.x86_64.zip
+          unzip -q Godot_v4.5-beta5_linux.x86_64.zip -d godot
+          chmod +x godot/Godot_v4.5-beta5_linux.x86_64
 
-      - name: Create debug keystore if not exists
+      - name: Download Godot export templates
         run: |
-          if [ ! -f debug.keystore ]; then
-            keytool -genkeypair -v \
-              -keystore debug.keystore \
-              -storepass android \
-              -keypass android \
-              -alias androiddebugkey \
-              -dname "CN=Android Debug,O=Godot,C=NL" \
-              -keyalg RSA -keysize 2048 -validity 10000
-          fi
+          mkdir -p ~/.local/share/godot/templates/4.5.beta5
+          wget -q https://github.com/godotengine/godot-builds/releases/download/4.5-beta5/Godot_v4.5-beta5_export_templates.tpz
+          unzip -q Godot_v4.5-beta5_export_templates.tpz -d ~/.local/share/godot/templates/4.5.beta5
 
-      - name: Generate export_presets.cfg
+      - name: Android SDK & NDK Setup
         run: |
-          cat > export_presets.cfg << 'EOF'
-          [preset.0]
-          name="Android Debug"
-          platform="Android"
-          runnable=true
-          custom_features=""
-          export_filter="all_resources"
-          include_filter=""
-          exclude_filter=""
-          export_path="build/android-debug.apk"
-          encryption_include_filters=""
-          encryption_exclude_filters=""
-          encrypt_pck=false
-          encrypt_directory=false
-          custom_template/debug="~/.local/share/godot/export_templates/4.5.beta5/android_debug.apk"
-          custom_template/release="~/.local/share/godot/export_templates/4.5.beta5/android_release.apk"
+          mkdir -p $HOME/android-sdk/cmdline-tools
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
+          unzip -q commandlinetools-linux-9477386_latest.zip -d $HOME/android-sdk/cmdline-tools
+          mv $HOME/android-sdk/cmdline-tools/cmdline-tools $HOME/android-sdk/cmdline-tools/latest
 
+          export ANDROID_SDK_ROOT=$HOME/android-sdk
+          export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/build-tools/33.0.2:$PATH
+
+          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
+          $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager \
+            "platforms;android-33" \
+            "build-tools;33.0.2" \
+            "ndk;25.2.9519653"
+
+      - name: Generate debug keystore
+        run: |
+          keytool -genkeypair -noprompt \
+            -keystore debug.keystore \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android Debug,O=Godot,L=Internet,ST=World,C=US"
+
+      - name: Create export_presets.cfg
+        run: |
+          mkdir -p export_presets
+          cat <<EOL > export_presets/export_presets.cfg
           [preset.1]
-          name="Android Release APK"
+          name="Android"
           platform="Android"
-          runnable=false
-          custom_features=""
-          export_filter="all_resources"
-          include_filter=""
-          exclude_filter=""
-          export_path="build/android-release.apk"
-          encryption_include_filters=""
-          encryption_exclude_filters=""
-          encrypt_pck=false
-          encrypt_directory=false
-          custom_template/debug="~/.local/share/godot/export_templates/4.5.beta5/android_debug.apk"
-          custom_template/release="~/.local/share/godot/export_templates/4.5.beta5/android_release.apk"
+          file="build/app-release.apk"
+          keystore="debug.keystore"
+          store_password="android"
+          alias="androiddebugkey"
+          alias_password="android"
+          EOL
 
-          [preset.2]
-          name="Android Release AAB"
-          platform="Android"
-          runnable=false
-          custom_features=""
-          export_filter="all_resources"
-          include_filter=""
-          exclude_filter=""
-          export_path="build/android-release.aab"
-          encryption_include_filters=""
-          encryption_exclude_filters=""
-          encrypt_pck=false
-          encrypt_directory=false
-          custom_template/debug="~/.local/share/godot/export_templates/4.5.beta5/android_debug.apk"
-          custom_template/release="~/.local/share/godot/export_templates/4.5.beta5/android_release.apk"
-          EOF
-
-      - name: Build Android Debug APK
+      - name: Build Android APK Debug
         run: |
-          ./godot/godot --headless --export-debug "Android Debug"
+          ./godot/Godot_v4.5-beta5_linux.x86_64 --headless \
+            --export-debug "Android" build/app-debug.apk --verbose
 
-      - name: Build Android Release APK
+      - name: Build Android APK Release
+        env:
+          KEYSTORE_PASSWORD: android
+          KEY_ALIAS: androiddebugkey
+          KEY_PASSWORD: android
         run: |
-          ./godot/godot --headless --export-release "Android Release APK"
+          ./godot/Godot_v4.5-beta5_linux.x86_64 --headless \
+            --export "Android" build/app-release.apk --verbose
 
-      - name: Build Android Release AAB
+      - name: Build Android AAB
+        env:
+          KEYSTORE_PASSWORD: android
+          KEY_ALIAS: androiddebugkey
+          KEY_PASSWORD: android
         run: |
-          ./godot/godot --headless --export-release "Android Release AAB"
+          ./godot/Godot_v4.5-beta5_linux.x86_64 --headless \
+            --export "Android App Bundle" build/app-release.aab --verbose
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: android-builds
+          name: godot-android-build
           path: build/
