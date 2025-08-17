@@ -1,0 +1,94 @@
+name: [Lewriner] Game Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        arch: [x86_64, arm64, arm32] # arm32 só para Linux
+    name: Build ${{ matrix.os }}-${{ matrix.arch }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # --- Linux/Windows/macOS setup Godot ---
+      - name: Setup Godot
+        run: |
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            wget https://downloads.tuxfamily.org/godotengine/4.5/Godot_v4.5-beta5-stable_linux_headless.64.zip
+            unzip Godot_v4.5-beta5-stable_linux_headless.64.zip -d godot
+            chmod +x godot/Godot_v4.5-beta5-stable_linux_headless.64
+          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            wget https://downloads.tuxfamily.org/godotengine/4.5/Godot_v4.5-beta5-stable_macos_universal.zip
+            unzip Godot_v4.5-beta5-stable_macos_universal.zip -d godot
+          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            powershell -Command "Invoke-WebRequest -Uri https://downloads.tuxfamily.org/godotengine/4.5/Godot_v4.5-beta5-stable_win64.zip -OutFile godot.zip"
+            powershell -Command "Expand-Archive godot.zip -DestinationPath godot"
+          fi
+
+      # --- Export Templates ---
+      - name: Install Export Templates
+        run: |
+          mkdir -p ~/.local/share/godot/templates/4.5.beta5
+          wget https://downloads.tuxfamily.org/godotengine/4.5/Godot_v4.5-beta5-stable_export_templates.tpz
+          unzip Godot_v4.5-beta5-stable_export_templates.tpz -d ~/.local/share/godot/templates/4.5.beta5
+
+      # --- Android Build (apenas Linux) ---
+      - name: Android Setup (Linux only)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt update
+          sudo apt install -y wget unzip openjdk-11-jdk
+          mkdir -p $HOME/android-sdk/cmdline-tools/latest
+          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
+          unzip commandlinetools-linux-9477386_latest.zip -d $HOME/android-sdk/cmdline-tools/latest
+          echo "export ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "export PATH=$HOME/android-sdk/cmdline-tools/latest/bin:$HOME/android-sdk/platform-tools:$HOME/android-sdk/build-tools/33.0.2:$PATH" >> $GITHUB_ENV
+          yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+          $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager "platforms;android-33" "build-tools;33.0.2" "ndk;25.2.9519653"
+          keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000
+
+      - name: Export Android APK Debug
+        if: matrix.os == 'ubuntu-latest'
+        run: ./godot/Godot_v4.5-beta5-stable_linux_headless.64 --export-debug "Android" build/app-debug.apk --verbose
+
+      - name: Export Android APK Release
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./godot/Godot_v4.5-beta5-stable_linux_headless.64 --export "Android" build/app-release.apk --verbose
+
+      - name: Export Android AAB
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./godot/Godot_v4.5-beta5-stable_linux_headless.64 --export "Android App Bundle" build/app-release.aab --verbose
+
+      # --- Desktop builds ---
+      - name: Export Desktop
+        run: |
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            ./godot/Godot_v4.5-beta5-stable_linux_headless.64 --export "Linux/X11" build/linux-${{ matrix.arch }}/game.x86_64 --verbose
+          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            ./godot/Godot_v4.5-beta5-stable_macos_universal.app/Contents/MacOS/Godot --export "Mac OSX" build/macos-${{ matrix.arch }}/game.app --verbose
+          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            godot\Godot_v4.5-beta5-stable_win64.exe --export "Windows Desktop" build/windows-${{ matrix.arch }}/game.exe --verbose
+          fi
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: godot-build-${{ matrix.os }}-${{ matrix.arch }}
+          path: build/
