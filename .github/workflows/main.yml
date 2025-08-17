@@ -61,7 +61,8 @@ jobs:
 
       - name: Create export_presets.cfg
         run: |
-          echo '[preset.0]
+          cat > export_presets.cfg << 'EOL'
+[preset.0]
 name="Android Debug APK"
 platform="Android"
 runnable=true
@@ -107,7 +108,8 @@ architectures/arm64-v8a=true
 version/code=1
 version/name="0.1"
 permissions/custom_permissions=PackedStringArray()
-gradle_build/export_format=1' > export_presets.cfg
+gradle_build/export_format=1
+EOL
 
       - name: Build Android APK Debug
         run: |
