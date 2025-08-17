@@ -34,11 +34,14 @@ jobs:
 
       - name: Install Godot Export Templates
         run: |
-          GODOT_VERSION="4.5.beta5"
-          TEMPLATES_DIR="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}"
+          GODOT_VERSION="4.5-beta5"
+          TEMPLATES_DIR="$HOME/.local/share/godot/export_templates/4.5.beta5"
           mkdir -p "$TEMPLATES_DIR"
-          wget https://github.com/godotengine/godot-builds/releases/download/4.5-beta5/Godot_v4.5-beta5_export_templates.tpz
-          unzip Godot_v4.5-beta5_export_templates.tpz -d "$TEMPLATES_DIR"
+          wget https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_export_templates.tpz
+          unzip Godot_v${GODOT_VERSION}_export_templates.tpz -d /tmp/templates
+          mkdir -p "$TEMPLATES_DIR"
+          mv /tmp/templates/templates/* "$TEMPLATES_DIR/"
+          ls -la "$TEMPLATES_DIR"
 
       - name: Android SDK & NDK setup
         run: |
@@ -87,6 +90,9 @@ jobs:
           permissions/internet=true
           permissions/read_external_storage=true
           permissions/write_external_storage=true
+          keystore/debug="./debug.keystore"
+          keystore/debug_user="androiddebugkey"
+          keystore/debug_password="android"
           EOL
 
       - name: Create build directory
