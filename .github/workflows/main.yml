@@ -1,4 +1,4 @@
-name: [Lewriner] Game Build
+name: Godot 4.5 beta 5 Cross-Platform Build
 
 on:
   push:
@@ -8,19 +8,19 @@ on:
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        arch: [x86_64, arm64, arm32] # arm32 só para Linux
+        arch: [x86_64, arm64]
+    runs-on: ${{ matrix.os }}
     name: Build ${{ matrix.os }}-${{ matrix.arch }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # --- Linux/Windows/macOS setup Godot ---
-      - name: Setup Godot
+      # --- Setup Godot ---
+      - name: Setup Godot 4.5 beta 5
         run: |
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
             wget https://downloads.tuxfamily.org/godotengine/4.5/Godot_v4.5-beta5-stable_linux_headless.64.zip
@@ -41,8 +41,8 @@ jobs:
           wget https://downloads.tuxfamily.org/godotengine/4.5/Godot_v4.5-beta5-stable_export_templates.tpz
           unzip Godot_v4.5-beta5-stable_export_templates.tpz -d ~/.local/share/godot/templates/4.5.beta5
 
-      # --- Android Build (apenas Linux) ---
-      - name: Android Setup (Linux only)
+      # --- Android setup (Linux only) ---
+      - name: Android Setup
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt update
@@ -77,7 +77,7 @@ jobs:
         run: ./godot/Godot_v4.5-beta5-stable_linux_headless.64 --export "Android App Bundle" build/app-release.aab --verbose
 
       # --- Desktop builds ---
-      - name: Export Desktop
+      - name: Export Desktop Builds
         run: |
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
             ./godot/Godot_v4.5-beta5-stable_linux_headless.64 --export "Linux/X11" build/linux-${{ matrix.arch }}/game.x86_64 --verbose
@@ -85,7 +85,6 @@ jobs:
             ./godot/Godot_v4.5-beta5-stable_macos_universal.app/Contents/MacOS/Godot --export "Mac OSX" build/macos-${{ matrix.arch }}/game.app --verbose
           elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             godot\Godot_v4.5-beta5-stable_win64.exe --export "Windows Desktop" build/windows-${{ matrix.arch }}/game.exe --verbose
-          fi
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
