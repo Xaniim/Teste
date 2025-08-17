@@ -59,7 +59,7 @@ jobs:
             -validity 10000 \
             -dname "CN=Android Debug,O=Godot,L=Internet,ST=World,C=US"
 
-      - name: Create export_presets.cfg
+      - name: Create export_presets.cfg with Gradle and multi-arch
         run: |
           cat <<EOL > export_presets.cfg
           [preset.0]
@@ -68,44 +68,25 @@ jobs:
           runnable=true
           advanced_options=false
           dedicated_server=false
-          custom_features=""
           export_filter="all_resources"
-          include_filter=""
-          exclude_filter=""
-          export_path=""
-          patches=PackedStringArray()
-          encryption_include_filters=""
-          encryption_exclude_filters=""
           seed=0
           encrypt_pck=false
           encrypt_directory=false
           script_export_mode=2
 
           [preset.0.options]
-          custom_template/debug="$HOME/.local/share/godot/templates/4.5.beta5/android_debug.apk"
-          custom_template/release="$HOME/.local/share/godot/templates/4.5.beta5/android_release.apk"
-          gradle_build/use_gradle_build=false
-          gradle_build/gradle_build_directory=""
-          gradle_build/android_source_template=""
-          gradle_build/export_format=0
-          gradle_build/min_sdk=""
-          gradle_build/target_sdk=""
-          gradle_build/custom_theme_attributes={}
-          architectures/armeabi-v7a=false
+          gradle_build/use_gradle_build=true
+          gradle_build/gradle_build_directory="build/android_gradle"
+          architectures/armeabi-v7a=true
           architectures/arm64-v8a=true
           architectures/x86=false
           architectures/x86_64=false
           version/code=1
-          version/name=""
           package/unique_name="com.lewriner.game"
-          package/name=""
           package/signed=true
-          package/app_category=2
-          package/retain_data_on_uninstall=false
-          package/exclude_from_recents=false
-          package/show_in_android_tv=false
-          package/show_in_app_library=true
-          package/show_as_launcher_app=false
+          key/keystore="debug.keystore"
+          key/alias="androiddebugkey"
+          key/password="android"
           permissions/internet=true
           EOL
 
@@ -113,19 +94,11 @@ jobs:
         run: |
           ./godot/Godot_v4.5-beta5_linux.x86_64 --headless --export-debug "Android" build/debug.apk --verbose
 
-      - name: Build Android Release APK
-        env:
-          KEYSTORE_PASSWORD: android
-          KEY_ALIAS: androiddebugkey
-          KEY_PASSWORD: android
+      - name: Build Android Release APK (Gradle)
         run: |
           ./godot/Godot_v4.5-beta5_linux.x86_64 --headless --export-release "Android" build/release.apk --verbose
 
-      - name: Build Android Release AAB
-        env:
-          KEYSTORE_PASSWORD: android
-          KEY_ALIAS: androiddebugkey
-          KEY_PASSWORD: android
+      - name: Build Android Release AAB (Gradle)
         run: |
           ./godot/Godot_v4.5-beta5_linux.x86_64 --headless --export-pack "Android" build/release.aab --verbose
 
