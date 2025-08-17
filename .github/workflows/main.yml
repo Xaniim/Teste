@@ -49,42 +49,29 @@ jobs:
 
       - name: Generate debug keystore
         run: |
-          keytool -genkeypair \
+          keytool -genkeypair -v \
             -keystore debug.keystore \
             -storepass android \
             -alias androiddebugkey \
             -keypass android \
             -keyalg RSA \
             -keysize 2048 \
-            -validity 10000 \
-            -dname "CN=GodotDebug, OU=Dev, O=Godot, L=City, ST=State, C=US"
-
-      - name: Generate release keystore
-        run: |
-          keytool -genkeypair \
-            -keystore release.keystore \
-            -storepass android \
-            -alias androidreleasekey \
-            -keypass android \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -dname "CN=GodotRelease, OU=Dev, O=Godot, L=City, ST=State, C=US"
+            -validity 10000
 
       - name: Build Android APK Debug
         run: |
-          ./godot/Godot_v4.5-beta5_linux.x86_64 \
+          ./godot/Godot_v4.5-beta5_linux.x86_64 --headless \
             --export-debug "Android" build/app-debug.apk --verbose
 
       - name: Build Android APK Release
         env:
           KEYSTORE_PASSWORD: android
-          KEY_ALIAS: androidreleasekey
+          KEY_ALIAS: androiddebugkey
           KEY_PASSWORD: android
         run: |
-          ./godot/Godot_v4.5-beta5_linux.x86_64 \
+          ./godot/Godot_v4.5-beta5_linux.x86_64 --headless \
             --export "Android" build/app-release.apk --verbose \
-            --keystore release.keystore \
+            --keystore debug.keystore \
             --keystore-pass $KEYSTORE_PASSWORD \
             --key $KEY_ALIAS \
             --key-pass $KEY_PASSWORD
@@ -92,12 +79,12 @@ jobs:
       - name: Build Android AAB
         env:
           KEYSTORE_PASSWORD: android
-          KEY_ALIAS: androidreleasekey
+          KEY_ALIAS: androiddebugkey
           KEY_PASSWORD: android
         run: |
-          ./godot/Godot_v4.5-beta5_linux.x86_64 \
+          ./godot/Godot_v4.5-beta5_linux.x86_64 --headless \
             --export "Android App Bundle" build/app-release.aab --verbose \
-            --keystore release.keystore \
+            --keystore debug.keystore \
             --keystore-pass $KEYSTORE_PASSWORD \
             --key $KEY_ALIAS \
             --key-pass $KEY_PASSWORD
