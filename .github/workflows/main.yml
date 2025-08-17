@@ -65,7 +65,7 @@ jobs:
           [preset.0]
           name="Android"
           platform="Android"
-          runnable=true           
+          runnable=true
           advanced_options=false
           dedicated_server=false
           custom_features=""
@@ -137,7 +137,7 @@ jobs:
 
       - name: Build Android Debug APK
         run: |
-          ./godot/Godot_v4.5-beta5_linux.x86_64 --headless --export "Android Debug APK" build/debug.apk --verbose
+          ./godot/Godot_v4.5-beta5_linux.x86_64 --headless --export-debug "Android" build/debug.apk --verbose
 
       - name: Build Android Release APK
         env:
@@ -145,7 +145,7 @@ jobs:
           KEY_ALIAS: androiddebugkey
           KEY_PASSWORD: android
         run: |
-          ./godot/Godot_v4.5-beta5_linux.x86_64 --headless --export "Android Release APK" build/release.apk --verbose
+          ./godot/Godot_v4.5-beta5_linux.x86_64 --headless --export-release "Android" build/release.apk --verbose
 
       - name: Build Android Release AAB
         env:
@@ -153,7 +153,7 @@ jobs:
           KEY_ALIAS: androiddebugkey
           KEY_PASSWORD: android
         run: |
-          ./godot/Godot_v4.5-beta5_linux.x86_64 --headless --export "Android Release AAB" build/release.aab --verbose
+          ./godot/Godot_v4.5-beta5_linux.x86_64 --headless --export-release "Android" build/release.aab --verbose
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
