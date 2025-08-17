@@ -88,8 +88,8 @@ jobs:
           script_export_mode=2
 
           [preset.0.options]
-          custom_template/debug="$HOME/.local/share/godot/templates/4.5.beta5/android_debug.apk"
-          custom_template/release="$HOME/.local/share/godot/templates/4.5.beta5/android_release.apk"
+          custom_template/debug="$HOME/.local/share/godot/templates/4.5.beta5/templates/android_debug.apk"
+          custom_template/release="$HOME/.local/share/godot/templates/4.5.beta5/templates/android_release.apk"
           gradle_build/use_gradle_build=false
           gradle_build/gradle_build_directory=""
           gradle_build/android_source_template=""
@@ -140,3 +140,4 @@ jobs:
         with:
           name: godot-android-build
           path: build/
+
