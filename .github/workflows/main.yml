@@ -61,60 +61,22 @@ jobs:
 
       - name: Create export_presets.cfg
         run: |
-          cat > export_presets.cfg << 'EOL'
-[preset.0]
-name="Android Debug APK"
-platform="Android"
-runnable=true
-export_path="build/debug.apk"
-script_export_mode=2
-
-[preset.0.options]
-package/unique_name="com.lewriner.game"
-package/signed=false
-architectures/arm64-v8a=true
-version/code=1
-version/name="0.1"
-permissions/custom_permissions=PackedStringArray()
-gradle_build/export_format=0
-
-[preset.1]
-name="Android Release APK"
-platform="Android"
-runnable=true
-export_path="build/release.apk"
-script_export_mode=2
-
-[preset.1.options]
-package/unique_name="com.lewriner.game"
-package/signed=true
-architectures/arm64-v8a=true
-version/code=1
-version/name="0.1"
-permissions/custom_permissions=PackedStringArray()
-gradle_build/export_format=0
-
-[preset.2]
-name="Android Release AAB"
-platform="Android"
-runnable=true
-export_path="build/release.aab"
-script_export_mode=2
-
-[preset.2.options]
-package/unique_name="com.lewriner.game"
-package/signed=true
-architectures/arm64-v8a=true
-version/code=1
-version/name="0.1"
-permissions/custom_permissions=PackedStringArray()
-gradle_build/export_format=1
-EOL
+          mkdir -p export_presets
+          cat << 'EOF' > export_presets/export_presets.cfg
+          [preset.1]
+          name="Android"
+          platform="Android"
+          file="build/app-release.apk"
+          keystore="debug.keystore"
+          store_password="android"
+          alias="androiddebugkey"
+          alias_password="android"
+          EOF
 
       - name: Build Android APK Debug
         run: |
           ./godot/Godot_v4.5-beta5_linux.x86_64 --headless \
-            --export-debug "Android Debug APK" build/debug.apk --verbose
+            --export-debug "Android" build/app-debug.apk --verbose
 
       - name: Build Android APK Release
         env:
@@ -123,7 +85,7 @@ EOL
           KEY_PASSWORD: android
         run: |
           ./godot/Godot_v4.5-beta5_linux.x86_64 --headless \
-            --export "Android Release APK" build/release.apk --verbose
+            --export "Android" build/app-release.apk --verbose
 
       - name: Build Android AAB
         env:
@@ -132,7 +94,7 @@ EOL
           KEY_PASSWORD: android
         run: |
           ./godot/Godot_v4.5-beta5_linux.x86_64 --headless \
-            --export "Android Release AAB" build/release.aab --verbose
+            --export "Android App Bundle" build/app-release.aab --verbose
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
