@@ -30,6 +30,11 @@ jobs:
           wget -q https://github.com/godotengine/godot-builds/releases/download/4.5-beta5/Godot_v4.5-beta5_export_templates.tpz
           unzip -q Godot_v4.5-beta5_export_templates.tpz -d ~/.local/share/godot/templates/4.5.beta5
 
+          # Godot 4 expects Android APK templates here
+          mkdir -p ~/.local/share/godot/templates/4.5.beta5/android
+          cp ~/.local/share/godot/templates/4.5.beta5/android_debug.apk ~/.local/share/godot/templates/4.5.beta5/android/
+          cp ~/.local/share/godot/templates/4.5.beta5/android_release.apk ~/.local/share/godot/templates/4.5.beta5/android/
+
       - name: Android SDK & NDK Setup
         run: |
           mkdir -p $HOME/android-sdk/cmdline-tools
@@ -153,7 +158,7 @@ jobs:
           KEY_ALIAS: androiddebugkey
           KEY_PASSWORD: android
         run: |
-          ./godot/Godot_v4.5-beta5_linux.x86_64 --headless --export-release "Android" build/release.aab --verbose
+          ./godot/Godot_v4.5-beta5_linux.x86_64 --headless --export-pack "Android" build/release.aab --verbose
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
