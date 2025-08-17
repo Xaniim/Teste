@@ -1,52 +1,46 @@
-name: Godot 4.5 Beta 5 Build
+name: Godot 4.5 Beta 5 Multi Build
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
 
 jobs:
-  build:
+  build-linux:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # --- Install dependencies ---
       - name: Install Dependencies
         run: |
           sudo apt update
           sudo apt install -y wget unzip openjdk-11-jdk zip
 
-      # --- Download Godot Linux ---
       - name: Download Godot Linux x86_64
         run: |
           mkdir godot
-          wget https://github.com/godotengine/godot-builds/releases/download/4.5-beta5/Godot_v4.5-beta5_linux.x86_64.zip
-          unzip Godot_v4.5-beta5_linux.x86_64.zip -d godot
+          wget -q https://github.com/godotengine/godot-builds/releases/download/4.5-beta5/Godot_v4.5-beta5_linux.x86_64.zip
+          unzip -q Godot_v4.5-beta5_linux.x86_64.zip -d godot
           chmod +x godot/Godot_v4.5-beta5_linux.x86_64
 
-      # --- Download Export Templates ---
       - name: Download Export Templates
         run: |
           mkdir -p ~/.local/share/godot/templates/4.5.beta5
-          wget https://github.com/godotengine/godot-builds/releases/download/4.5-beta5/Godot_v4.5-beta5_export_templates.tpz
-          unzip Godot_v4.5-beta5_export_templates.tpz -d ~/.local/share/godot/templates/4.5.beta5
+          wget -q https://github.com/godotengine/godot-builds/releases/download/4.5-beta5/Godot_v4.5-beta5_export_templates.tpz
+          unzip -q Godot_v4.5-beta5_export_templates.tpz -d ~/.local/share/godot/templates/4.5.beta5
 
-      # --- Android SDK Setup ---
       - name: Android SDK Setup
         run: |
           mkdir -p $HOME/android-sdk/cmdline-tools/latest
-          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
-          unzip commandlinetools-linux-9477386_latest.zip -d $HOME/android-sdk/cmdline-tools/latest
-          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
-          echo "PATH=$HOME/android-sdk/cmdline-tools/latest/bin:$HOME/android-sdk/platform-tools:$HOME/android-sdk/build-tools/33.0.2:$PATH" >> $GITHUB_ENV
-          yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
-          $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager "platforms;android-33" "build-tools;33.0.2" "ndk;25.2.9519653"
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
+          unzip -q commandlinetools-linux-9477386_latest.zip -d $HOME/android-sdk/cmdline-tools/latest
+          export ANDROID_SDK_ROOT=$HOME/android-sdk
+          export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/build-tools/33.0.2:$PATH
+          yes | sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses
+          sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platforms;android-33" "build-tools;33.0.2" "ndk;25.2.9519653"
+        shell: bash
 
-      # --- Generate Debug Keystore ---
       - name: Generate Debug Keystore
         run: |
           keytool -genkeypair -v \
@@ -58,13 +52,11 @@ jobs:
             -keysize 2048 \
             -validity 10000
 
-      # --- Build Android APK Debug ---
       - name: Build Android APK Debug
         run: |
           ./godot/Godot_v4.5-beta5_linux.x86_64 \
             --export-debug "Android" build/app-debug.apk --verbose
 
-      # --- Build Android APK Release ---
       - name: Build Android APK Release
         env:
           KEYSTORE_PASSWORD: android
@@ -74,7 +66,6 @@ jobs:
           ./godot/Godot_v4.5-beta5_linux.x86_64 \
             --export "Android" build/app-release.apk --verbose
 
-      # --- Build Android AAB ---
       - name: Build Android AAB
         env:
           KEYSTORE_PASSWORD: android
@@ -84,8 +75,7 @@ jobs:
           ./godot/Godot_v4.5-beta5_linux.x86_64 \
             --export "Android App Bundle" build/app-release.aab --verbose
 
-      # --- Upload Artifacts ---
-      - name: Upload All Builds
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: godot-build
