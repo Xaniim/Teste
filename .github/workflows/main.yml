@@ -24,6 +24,18 @@ jobs:
           unzip -q Godot_v4.5-beta5_linux.x86_64.zip -d godot
           chmod +x godot/Godot_v4.5-beta5_linux.x86_64
 
+      - name: Download Godot export templates (if missing)
+        run: |
+          TEMPLATES_DIR="$HOME/.local/share/godot/templates/4.5.beta5"
+          if [ ! -d "$TEMPLATES_DIR" ]; then
+            mkdir -p "$TEMPLATES_DIR"
+            wget -q https://github.com/godotengine/godot-builds/releases/download/4.5-beta5/Godot_v4.5-beta5_export_templates.tpz
+            unzip -q Godot_v4.5-beta5_export_templates.tpz -d "$TEMPLATES_DIR"
+            echo "Templates installed."
+          else
+            echo "Templates already exist, skipping download."
+          fi
+
       - name: Android SDK & NDK Setup
         run: |
           mkdir -p $HOME/android-sdk/cmdline-tools
@@ -60,22 +72,52 @@ jobs:
           name="Android"
           platform="Android"
           runnable=true
+          advanced_options=false
+          dedicated_server=false
+          custom_features=""
+          export_filter="all_resources"
+          include_filter=""
+          exclude_filter=""
+          export_path=""
+          patches=PackedStringArray()
+          encryption_include_filters=""
+          encryption_exclude_filters=""
+          seed=0
+          encrypt_pck=false
+          encrypt_directory=false
           script_export_mode=2
+
+          [preset.0.options]
+          custom_template/debug="$HOME/.local/share/godot/templates/4.5.beta5/android_debug.apk"
+          custom_template/release="$HOME/.local/share/godot/templates/4.5.beta5/android_release.apk"
+          gradle_build/use_gradle_build=false
+          gradle_build/gradle_build_directory=""
+          gradle_build/android_source_template=""
+          gradle_build/export_format=0
+          gradle_build/min_sdk=""
+          gradle_build/target_sdk=""
+          gradle_build/custom_theme_attributes={}
+          architectures/armeabi-v7a=false
+          architectures/arm64-v8a=true
+          architectures/x86=false
+          architectures/x86_64=false
           version/code=1
+          version/name=""
           package/unique_name="com.lewriner.game"
+          package/name=""
           package/signed=true
+          package/app_category=2
+          package/retain_data_on_uninstall=false
+          package/exclude_from_recents=false
+          package/show_in_android_tv=false
+          package/show_in_app_library=true
+          package/show_as_launcher_app=false
           permissions/internet=true
           EOL
 
-      - name: Download Godot export templates (EOF)
-        run: |
-          mkdir -p ~/.local/share/godot/templates/4.5.beta5
-          wget -q https://github.com/godotengine/godot-builds/releases/download/4.5-beta5/Godot_v4.5-beta5_export_templates.tpz
-          unzip -q Godot_v4.5-beta5_export_templates.tpz -d ~/.local/share/godot/templates/4.5.beta5
-
       - name: Build Android Debug APK
         run: |
-          ./godot/Godot_v4.5-beta5_linux.x86_64 --headless --export "Android" build/debug.apk --verbose
+          ./godot/Godot_v4.5-beta5_linux.x86_64 --headless --export-debug "Android" build/debug.apk --verbose
 
       - name: Build Android Release APK
         env:
