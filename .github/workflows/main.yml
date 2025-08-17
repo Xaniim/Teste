@@ -49,14 +49,15 @@ jobs:
 
       - name: Generate debug keystore
         run: |
-          keytool -genkeypair -v \
+          keytool -genkeypair -noprompt \
             -keystore debug.keystore \
             -storepass android \
             -alias androiddebugkey \
             -keypass android \
             -keyalg RSA \
             -keysize 2048 \
-            -validity 10000
+            -validity 10000 \
+            -dname "CN=Android Debug,O=Godot,L=Internet,ST=World,C=US"
 
       - name: Build Android APK Debug
         run: |
@@ -70,11 +71,7 @@ jobs:
           KEY_PASSWORD: android
         run: |
           ./godot/Godot_v4.5-beta5_linux.x86_64 --headless \
-            --export "Android" build/app-release.apk --verbose \
-            --keystore debug.keystore \
-            --keystore-pass $KEYSTORE_PASSWORD \
-            --key $KEY_ALIAS \
-            --key-pass $KEY_PASSWORD
+            --export "Android" build/app-release.apk --verbose
 
       - name: Build Android AAB
         env:
@@ -83,11 +80,7 @@ jobs:
           KEY_PASSWORD: android
         run: |
           ./godot/Godot_v4.5-beta5_linux.x86_64 --headless \
-            --export "Android App Bundle" build/app-release.aab --verbose \
-            --keystore debug.keystore \
-            --keystore-pass $KEYSTORE_PASSWORD \
-            --key $KEY_ALIAS \
-            --key-pass $KEY_PASSWORD
+            --export "Android App Bundle" build/app-release.aab --verbose
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
