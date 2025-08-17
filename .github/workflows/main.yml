@@ -9,11 +9,13 @@ jobs:
   android:
     runs-on: ubuntu-latest
     steps:
-      - name: Ensure tar is installed
-        run: sudo apt update && sudo apt install -y tar wget unzip openjdk-11-jdk zip
-
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y wget unzip openjdk-11-jdk zip tar
 
       - name: Download Godot Linux x86_64
         run: |
@@ -38,10 +40,8 @@ jobs:
           export ANDROID_SDK_ROOT=$HOME/android-sdk
           export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/build-tools/33.0.2:$PATH
 
-          # Aceitar licenças
           yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-          # Instalar plataforma, build-tools e NDK
           $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager \
             "platforms;android-33" \
             "build-tools;33.0.2" \
@@ -49,14 +49,27 @@ jobs:
 
       - name: Generate debug keystore
         run: |
-          keytool -genkeypair -v \
+          keytool -genkeypair \
             -keystore debug.keystore \
             -storepass android \
             -alias androiddebugkey \
             -keypass android \
             -keyalg RSA \
             -keysize 2048 \
-            -validity 10000
+            -validity 10000 \
+            -dname "CN=GodotDebug, OU=Dev, O=Godot, L=City, ST=State, C=US"
+
+      - name: Generate release keystore
+        run: |
+          keytool -genkeypair \
+            -keystore release.keystore \
+            -storepass android \
+            -alias androidreleasekey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=GodotRelease, OU=Dev, O=Godot, L=City, ST=State, C=US"
 
       - name: Build Android APK Debug
         run: |
@@ -66,20 +79,28 @@ jobs:
       - name: Build Android APK Release
         env:
           KEYSTORE_PASSWORD: android
-          KEY_ALIAS: androiddebugkey
+          KEY_ALIAS: androidreleasekey
           KEY_PASSWORD: android
         run: |
           ./godot/Godot_v4.5-beta5_linux.x86_64 \
-            --export "Android" build/app-release.apk --verbose
+            --export "Android" build/app-release.apk --verbose \
+            --keystore release.keystore \
+            --keystore-pass $KEYSTORE_PASSWORD \
+            --key $KEY_ALIAS \
+            --key-pass $KEY_PASSWORD
 
       - name: Build Android AAB
         env:
           KEYSTORE_PASSWORD: android
-          KEY_ALIAS: androiddebugkey
+          KEY_ALIAS: androidreleasekey
           KEY_PASSWORD: android
         run: |
           ./godot/Godot_v4.5-beta5_linux.x86_64 \
-            --export "Android App Bundle" build/app-release.aab --verbose
+            --export "Android App Bundle" build/app-release.aab --verbose \
+            --keystore release.keystore \
+            --keystore-pass $KEYSTORE_PASSWORD \
+            --key $KEY_ALIAS \
+            --key-pass $KEY_PASSWORD
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
