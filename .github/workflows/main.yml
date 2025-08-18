@@ -40,11 +40,6 @@ jobs:
           wget https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_export_templates.tpz
           unzip Godot_v${GODOT_VERSION}_export_templates.tpz -d /tmp/templates
           mv /tmp/templates/templates/* "$TEMPLATES_DIR/"
-          
-          # Copy Android templates to project directory
-          mkdir -p android/build
-          cp "$TEMPLATES_DIR/android_debug.apk" android/build/
-          cp "$TEMPLATES_DIR/android_release.apk" android/build/
 
       - name: Android SDK & NDK setup
         run: |
@@ -96,6 +91,10 @@ jobs:
           keystore/debug="./debug.keystore"
           keystore/debug_user="androiddebugkey"
           keystore/debug_password="android"
+          
+          # KEY FIX: Add custom template paths
+          custom_template/debug="$HOME/.local/share/godot/export_templates/4.5.beta5/android_debug.apk"
+          custom_template/release="$HOME/.local/share/godot/export_templates/4.5.beta5/android_release.apk"
           EOL
 
       - name: Create build directory
